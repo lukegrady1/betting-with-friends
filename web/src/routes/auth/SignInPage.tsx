@@ -22,23 +22,22 @@ export default function SignInPage() {
     setError('');
     setMessage('');
 
-    // Construct the correct callback URL based on environment
-    const baseUrl = import.meta.env.PROD ? '/betting-with-friends' : '';
-    const callbackUrl = `${window.location.origin}${baseUrl}/auth/callback`;
 
     if (isSignUp) {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          emailRedirectTo: callbackUrl,
-        },
       });
 
       if (error) {
         setError(error.message);
       } else {
-        setMessage('Check your email to confirm your account!');
+        setMessage('Account created! You can now sign in.');
+        // Auto-switch to sign-in mode after successful signup
+        setTimeout(() => {
+          setIsSignUp(false);
+          setMessage('');
+        }, 2000);
       }
     } else {
       const { error } = await supabase.auth.signInWithPassword({
@@ -136,7 +135,7 @@ export default function SignInPage() {
 
         <p className="text-xs text-muted-foreground">
           {isSignUp 
-            ? "You'll receive a confirmation email after signing up." 
+            ? "Create your account and start tracking picks immediately." 
             : "Use your email and password to sign in."
           }
         </p>
