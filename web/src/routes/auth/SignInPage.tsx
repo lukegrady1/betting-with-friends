@@ -19,10 +19,14 @@ export default function SignInPage() {
     setError('');
     setMessage('');
 
+    // Construct the correct callback URL based on environment
+    const baseUrl = import.meta.env.PROD ? '/betting-with-friends' : '';
+    const callbackUrl = `${window.location.origin}${baseUrl}/auth/callback`;
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}auth/callback`,
+        emailRedirectTo: callbackUrl,
       },
     });
 
