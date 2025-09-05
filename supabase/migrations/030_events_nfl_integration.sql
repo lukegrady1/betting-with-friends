@@ -18,6 +18,13 @@ create index if not exists events_season_week_idx on public.events(season, week)
 create index if not exists events_start_idx on public.events(start_time);
 create index if not exists events_external_idx on public.events(external_provider, external_id);
 
+-- Add unique constraint for upsert operations (only for external events)
+-- This allows us to prevent duplicate events from the same external provider
+-- Use a partial unique index since we only want uniqueness for external events
+create unique index if not exists events_external_unique 
+  on public.events (external_provider, external_id, league_id) 
+  where external_provider is not null and external_id is not null;
+
 -- Create sync log table for tracking rate limits and preventing duplicate syncs
 create table if not exists public.sync_log (
   league_id uuid not null references public.leagues(id) on delete cascade,
