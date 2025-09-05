@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { 
   Calendar, 
   Clock, 
@@ -10,13 +10,17 @@ import {
   CheckCircle,
   Circle,
   AlertCircle,
-  Zap
+  Zap,
+  MapPin,
+  RefreshCw
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { MobileShell } from '../../components/Layout/MobileShell';
 import { Card } from '../../components/UI/Card';
 import { Button } from '../../components/UI/Button';
 import { EmptyState } from '../../components/UI/EmptyState';
+import { syncWeek } from '../../lib/functions';
+import { useSeasonWeek, formatKickoff, formatTeamName } from '../../lib/nfl';
 
 interface Event {
   id: string;
@@ -29,6 +33,13 @@ interface Event {
   home_score?: number;
   away_score?: number;
   created_at: string;
+  week?: number;
+  season?: number;
+  venue_name?: string;
+  venue_city?: string;
+  venue_state?: string;
+  external_provider?: string;
+  external_id?: string;
 }
 
 interface EventWithPickCount extends Event {
@@ -36,10 +47,42 @@ interface EventWithPickCount extends Event {
   user_has_pick: boolean;
 }
 
+// Sync Week Button Component
+function SyncWeekButton({ season, week, leagueId }: { season: number; week: number; leagueId: string }) {
+  const queryClient = useQueryClient();
+  const { mutate, isPending, error } = useMutation({
+    mutationFn: () => syncWeek({ season, week, leagueId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['league-events', leagueId] });
+    },
+  });
+
+  return (
+    <div className="flex flex-col items-end space-y-1">
+      <Button 
+        size="sm" 
+        variant="secondary" 
+        onClick={() => mutate()} 
+        disabled={isPending} 
+        className="rounded-xl"
+      >
+        <RefreshCw size={16} className={`mr-1 ${isPending ? 'animate-spin' : ''}`} />
+        {isPending ? "Syncing…" : "Sync NFL Week"}
+      </Button>
+      {error && (
+        <div className="text-xs text-red-600 max-w-48 text-right">
+          {error.message || 'Failed to sync'}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function EventsPage() {
   const { leagueId } = useParams<{ leagueId: string }>();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
+  const [season, week] = useSeasonWeek();
 
   const { data: events, isLoading } = useQuery({
     queryKey: ['league-events', leagueId],
@@ -215,6 +258,17 @@ export function EventsPage() {
           </div>
         )}
 
+        {/* Season/Week Header and Controls */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-premium">Week {week}, {season} NFL Season</h2>
+            <p className="text-sm text-muted-foreground">Current NFL games and betting opportunities</p>
+          </div>
+          {isAdmin && leagueId && (
+            <SyncWeekButton season={season} week={week} leagueId={leagueId} />
+          )}
+        </div>
+
         {/* Filter Controls */}
         {events && events.length > 0 && (
           <div className="flex items-center justify-between">
@@ -272,9 +326,9 @@ export function EventsPage() {
               <Card key={event.id} className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <div className="flex items-center mb-2">
+                    <div className="flex items-center mb-3">
                       <h3 className="text-lg font-bold text-premium mr-3">
-                        {event.away_team} @ {event.home_team}
+                        {event.sport === 'NFL' ? formatTeamName(event.away_team) : event.away_team} @ {event.sport === 'NFL' ? formatTeamName(event.home_team) : event.home_team}
                       </h3>
                       <div className={`px-2 py-1 rounded-full text-xs font-semibold flex items-center ${getStatusColor(event)}`}>
                         {getStatusIcon(event)}
@@ -282,36 +336,29 @@ export function EventsPage() {
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-                      <div>
-                        <span className="text-neutral-500">Sport:</span>
-                        <div className="font-semibold">{event.sport}</div>
+                    <div className="space-y-2 text-sm mb-4">
+                      <div className="flex items-center text-muted-foreground">
+                        <Clock size={14} className="mr-2" />
+                        {event.sport === 'NFL' ? formatKickoff(event.start_time) : new Date(event.start_time).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric', 
+                          year: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit'
+                        })}
                       </div>
-                      {event.league_name && (
-                        <div>
-                          <span className="text-neutral-500">League:</span>
-                          <div className="font-semibold">{event.league_name}</div>
+                      
+                      {event.venue_name && (
+                        <div className="flex items-center text-muted-foreground">
+                          <MapPin size={14} className="mr-2" />
+                          {event.venue_name}
+                          {event.venue_city && ` • ${event.venue_city}${event.venue_state ? `, ${event.venue_state}` : ''}`}
                         </div>
                       )}
-                      <div>
-                        <span className="text-neutral-500">Date & Time:</span>
-                        <div className="font-semibold flex items-center">
-                          <Clock size={14} className="mr-1" />
-                          {new Date(event.start_time).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit'
-                          })}
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-neutral-500">Picks:</span>
-                        <div className="font-semibold flex items-center">
-                          <Users size={14} className="mr-1" />
-                          {event.pick_count} member{event.pick_count !== 1 ? 's' : ''}
-                        </div>
+                      
+                      <div className="flex items-center text-muted-foreground">
+                        <Users size={14} className="mr-2" />
+                        {event.pick_count} pick{event.pick_count !== 1 ? 's' : ''} made
                       </div>
                     </div>
 
@@ -349,8 +396,9 @@ export function EventsPage() {
                   <div className="flex space-x-2">
                     {canMakePick(event) && !event.user_has_pick && (
                       <Button
-                        onClick={() => navigate(`/leagues/${leagueId}/events/${event.id}/pick`)}
+                        onClick={() => navigate(`/leagues/${leagueId}/picks/new?event=${event.id}`)}
                         size="sm"
+                        className="rounded-xl"
                       >
                         <Target size={16} className="mr-1" />
                         Make Pick
