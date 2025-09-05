@@ -1,4 +1,5 @@
 // Client utilities for calling Supabase Edge Functions
+import { supabase } from './supabase';
 
 export async function syncWeek({ 
   season, 
@@ -14,12 +15,19 @@ export async function syncWeek({
     throw new Error('VITE_PUBLIC_FUNCTIONS_URL environment variable is not set');
   }
 
+  // Get the current session for authentication
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    throw new Error('Authentication required');
+  }
+
   const url = `${base}/nfl-sync-week?season=${season}&week=${week}&leagueId=${leagueId}`;
   
   const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
     },
   });
   

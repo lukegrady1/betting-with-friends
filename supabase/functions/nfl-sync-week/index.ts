@@ -53,7 +53,57 @@ serve(async (req) => {
       });
     }
 
+    // Create Supabase client with service role for database operations
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    
+    // Create another client for user authentication verification
+    const supabaseAuth = createClient(
+      SUPABASE_URL,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      {
+        global: {
+          headers: {
+            Authorization: req.headers.get("Authorization") ?? "",
+          },
+        },
+      }
+    );
+
+    // Verify user is authenticated
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Authentication required" }),
+        {
+          status: 401,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    // Verify user is an admin of the league
+    const { data: memberData, error: memberError } = await supabase
+      .from("league_members")
+      .select("role")
+      .eq("league_id", leagueId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (memberError || !memberData || memberData.role !== "admin") {
+      return new Response(
+        JSON.stringify({ error: "Admin access required" }),
+        {
+          status: 403,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
 
     // Check if we've synced recently to avoid rate limits (within last hour)
     const { data: lastSync } = await supabase
