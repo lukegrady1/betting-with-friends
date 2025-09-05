@@ -45,14 +45,19 @@ supabase db push
 supabase functions deploy nfl-sync-week
 ```
 
-## Step 5: Configure SportsDataIO API Key
+## Step 5: Configure Environment Secrets
 
 ```bash
-# Set the API key as a Supabase secret
+# Set the SportsDataIO API key as a Supabase secret
 supabase secrets set SPORTSDATAIO_API_KEY=your_actual_api_key_here
+
+# Set the Supabase anon key (needed for authentication verification)
+supabase secrets set SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-Replace `your_actual_api_key_here` with your actual SportsDataIO API key.
+Replace with your actual values:
+- `your_actual_api_key_here` - Your SportsDataIO API key
+- `your_supabase_anon_key` - Your Supabase anon key (same as in your .env file)
 
 ## Step 6: Verify Configuration
 
@@ -76,8 +81,12 @@ Replace `your_actual_api_key_here` with your actual SportsDataIO API key.
 - Check the functions URL in your `.env` file
 
 **API key error:**
-- Verify the secret is set: `supabase secrets list`
+- Verify the secrets are set: `supabase secrets list`
 - Check your SportsDataIO account has an active subscription
+
+**Authentication errors:**
+- Make sure you're logged into your app
+- Verify the SUPABASE_ANON_KEY secret is set correctly
 
 **Permission errors:**
 - Ensure you're a league admin to access the sync button
@@ -93,4 +102,4 @@ VITE_SUPABASE_ANON_KEY=your_anon_key
 VITE_PUBLIC_FUNCTIONS_URL=https://aqxaghkhswerbcizblnp.supabase.co/functions/v1
 ```
 
-The `SPORTSDATAIO_API_KEY` should be configured as a Supabase secret, not in the frontend `.env` file.
+The `SPORTSDATAIO_API_KEY` and `SUPABASE_ANON_KEY` should be configured as Supabase secrets, not in the frontend `.env` file.
