@@ -6,11 +6,18 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!; // for DB writes
 const SPORTSDATA_KEY = Deno.env.get("SPORTSDATAIO_API_KEY")!;
 
+// SportsDataIO API endpoints - check documentation for correct paths
 const SCORES_BASE = "https://api.sportsdata.io/v3/nfl/scores/json";
 
 async function fetchJson(url: string) {
   console.log(`Fetching URL: ${url}`);
+  console.log(`Using API key: ${SPORTSDATA_KEY ? SPORTSDATA_KEY.slice(0, 8) + '...' : 'NOT SET'}`);
+  
   const r = await fetch(url, { headers: { "Ocp-Apim-Subscription-Key": SPORTSDATA_KEY } });
+  
+  console.log(`Response status: ${r.status}`);
+  console.log(`Response headers:`, Object.fromEntries(r.headers.entries()));
+  
   if (!r.ok) {
     const errorText = await r.text();
     console.error(`API Error: ${r.status} ${errorText}`);
@@ -138,24 +145,34 @@ serve(async (req) => {
     // Fetch NFL data from SportsDataIO
     console.log(`Attempting to fetch NFL data for ${season} season, week ${week}`);
     
+    // Try different API endpoints - the free tier might use different paths
     let games, stadiums;
     try {
-      [games, stadiums] = await Promise.all([
-        fetchJson(`${SCORES_BASE}/GamesByWeek/${season}/${week}`),
-        fetchJson(`${SCORES_BASE}/Stadiums`),
-      ]);
+      // First try to get stadiums (simpler endpoint to test API key)
+      console.log(`Testing API with stadiums endpoint: ${SCORES_BASE}/Stadiums`);
+      stadiums = await fetchJson(`${SCORES_BASE}/Stadiums`);
+      console.log(`Successfully fetched ${stadiums.length} stadiums`);
+      
+      // Now try games - let's start with 2024 season, week 1 as a known good case
+      const testSeason = 2024;
+      const testWeek = 1;
+      console.log(`Testing games endpoint: ${SCORES_BASE}/GamesByWeek/${testSeason}/${testWeek}`);
+      games = await fetchJson(`${SCORES_BASE}/GamesByWeek/${testSeason}/${testWeek}`);
+      console.log(`Successfully fetched ${games.length} games for ${testSeason} week ${testWeek}`);
+      
+      // Update season for database records to use the working season
+      season = testSeason;
+      
     } catch (error) {
-      // If 2025 data is not available, try 2024 as fallback for development
-      if (season >= 2025 && error.message.includes('404')) {
-        console.log(`${season} data not available, falling back to 2024 season`);
-        [games, stadiums] = await Promise.all([
-          fetchJson(`${SCORES_BASE}/GamesByWeek/2024/${week}`),
-          fetchJson(`${SCORES_BASE}/Stadiums`),
-        ]);
-        // Update season for the database records
+      console.error(`API Error Details:`, error);
+      // Let's also try alternative endpoints
+      try {
+        console.log(`Trying alternative endpoint: ${SCORES_BASE}/Scores/${2024}`);
+        games = await fetchJson(`${SCORES_BASE}/Scores/${2024}`);
+        stadiums = []; // Empty array for now
         season = 2024;
-      } else {
-        throw error;
+      } catch (altError) {
+        throw new Error(`Both primary and alternative API endpoints failed. Primary: ${error.message}, Alternative: ${altError.message}`);
       }
     }
     
