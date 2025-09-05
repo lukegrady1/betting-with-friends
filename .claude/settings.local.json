@@ -18,7 +18,8 @@
       "Bash(git commit:*)",
       "Bash(git checkout:*)",
       "Bash(git push:*)",
-      "WebFetch(domain:lukegrady1.github.io)"
+      "WebFetch(domain:lukegrady1.github.io)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "ask": []
