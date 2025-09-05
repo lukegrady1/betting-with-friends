@@ -1,5 +1,5 @@
-import { Trophy, Users, ArrowRight, Copy } from "lucide-react";
-import { Card, CardContent } from "./Card";
+import { Trophy, ArrowRight, Copy } from "lucide-react";
+import { Card } from "./Card";
 import { Button } from "./Button";
 
 interface LeagueCardProps {

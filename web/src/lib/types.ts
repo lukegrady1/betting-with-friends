@@ -53,8 +53,8 @@ export interface Pick {
   updated_at?: string;
 }
 
-export interface PickVisible extends Pick {
-  market: string; // 'hidden' when not visible
+export interface PickVisible extends Omit<Pick, 'market' | 'side' | 'line' | 'odds_american' | 'units_staked'> {
+  market: string; // 'hidden' when not visible, or 'moneyline' | 'spread' | 'total'
   side: string | null;
   line: number | null;
   odds_american: number | null;

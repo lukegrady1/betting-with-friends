@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { 
@@ -6,11 +6,8 @@ import {
   Trophy, 
   Calendar, 
   Target, 
-  TrendingUp, 
   Share2, 
   Copy, 
-  Settings,
-  Plus,
   Activity,
   BarChart3,
   Clock,
@@ -30,14 +27,6 @@ interface LeagueStats {
   completed_events: number;
 }
 
-interface LeagueUser {
-  id: string;
-  username: string | null;
-  role: string;
-  wins: number;
-  losses: number;
-  net_units: number;
-}
 
 export function LeagueHomePage() {
   const { leagueId } = useParams<{ leagueId: string }>();

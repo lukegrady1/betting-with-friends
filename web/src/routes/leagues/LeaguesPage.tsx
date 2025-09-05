@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Users, LogOut } from 'lucide-react';
@@ -8,12 +7,9 @@ import { MobileShell } from '../../components/Layout/MobileShell';
 import { Button } from '../../components/UI/Button';
 import { LeagueCard } from '../../components/UI/LeagueCard';
 import { SkeletonCard } from '../../components/UI/SkeletonCard';
-import Spinner from '../../components/UI/Spinner';
 
 export function LeaguesPage() {
   const navigate = useNavigate();
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showJoinDialog, setShowJoinDialog] = useState(false);
 
   const { data: leagues, isLoading } = useQuery({
     queryKey: ['leagues'],

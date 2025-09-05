@@ -1,18 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { 
   BarChart3, 
   PieChart, 
-  TrendingUp,
-  TrendingDown,
   Target,
   DollarSign,
-  Calendar,
   Users,
   Activity,
-  Zap,
-  Filter,
   Award,
   Percent
 } from 'lucide-react';
@@ -105,15 +100,18 @@ export function AnalyticsPage() {
         acc[market].totalProfit += pick.profit_units || 0;
         if (pick.result === 'win') acc[market].wins++;
         return acc;
-      }, {} as Record<string, any>);
+      }, {} as Record<string, { picks: any[], wins: number, totalUnits: number, totalProfit: number }>);
 
-      const marketStats: MarketStat[] = Object.entries(marketGroups).map(([market, data]) => ({
-        market,
-        total_picks: data.picks.length,
-        win_rate: data.picks.length > 0 ? data.wins / data.picks.length : 0,
-        avg_units: data.picks.length > 0 ? data.totalUnits / data.picks.length : 0,
-        total_profit: data.totalProfit
-      }));
+      const marketStats: MarketStat[] = Object.entries(marketGroups).map(([market, groupData]) => {
+        const data = groupData as { picks: any[], wins: number, totalUnits: number, totalProfit: number };
+        return {
+          market,
+          total_picks: data.picks.length,
+          win_rate: data.picks.length > 0 ? data.wins / data.picks.length : 0,
+          avg_units: data.picks.length > 0 ? data.totalUnits / data.picks.length : 0,
+          total_profit: data.totalProfit
+        };
+      });
 
       // Get member performance
       const { data: memberStats } = await supabase
@@ -133,7 +131,7 @@ export function AnalyticsPage() {
         .limit(10);
 
       const memberPerformance: MemberStat[] = memberStats?.map(member => ({
-        username: member.profiles?.username || 'Anonymous',
+        username: (member.profiles as any)?.username || 'Anonymous',
         total_picks: member.graded || 0,
         win_rate: member.win_pct || 0,
         net_units: member.net_units || 0,

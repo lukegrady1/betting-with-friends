@@ -1,4 +1,3 @@
-import React from 'react';
 import { Home, List, Calendar, Trophy } from 'lucide-react';
 
 interface BottomNavProps {

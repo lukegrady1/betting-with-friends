@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { 
@@ -6,14 +6,11 @@ import {
   Clock, 
   Plus, 
   Target,
-  Trophy,
   Users,
-  Filter,
   CheckCircle,
   Circle,
   AlertCircle,
-  Zap,
-  Calendar as CalendarIcon
+  Zap
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { MobileShell } from '../../components/Layout/MobileShell';

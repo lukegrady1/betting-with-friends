@@ -5,12 +5,9 @@ import {
   Calendar, 
   Clock, 
   Users,
-  Plus,
   Save,
   AlertCircle,
-  Check,
   X,
-  CalendarDays,
   Trophy,
   Target
 } from 'lucide-react';

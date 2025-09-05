@@ -1,4 +1,3 @@
-import React from 'react';
 import { Home, List, Calendar, Trophy, Settings, LogOut } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 

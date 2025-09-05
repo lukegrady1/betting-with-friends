@@ -1,19 +1,17 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { 
   Trophy, 
-  Users, 
-  TrendingUp,
-  TrendingDown,
   Medal,
-  Target,
   DollarSign,
   Percent,
   BarChart3,
   Crown,
   Star,
-  Award
+  Award,
+  TrendingUp,
+  TrendingDown
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { MobileShell } from '../../components/Layout/MobileShell';
@@ -64,7 +62,7 @@ export function LeaderboardPage() {
 
       return data?.map((entry, index) => ({
         ...entry,
-        username: entry.profiles?.username || null,
+        username: (entry.profiles as any)?.username || null,
         rank: index + 1
       })) as LeaderboardEntry[] || [];
     },

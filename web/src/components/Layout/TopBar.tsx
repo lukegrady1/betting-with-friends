@@ -1,6 +1,5 @@
 import React from 'react';
 import { ArrowLeft, Settings, Plus } from 'lucide-react';
-import { Button } from '../UI/Button';
 
 interface TopBarProps {
   title: string;
