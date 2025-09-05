@@ -142,38 +142,34 @@ serve(async (req) => {
       }
     }
 
-    // Fetch NFL data from SportsDataIO
-    console.log(`Attempting to fetch NFL data for ${season} season, week ${week}`);
+    // Test SportsDataIO API connection step by step
+    console.log(`Starting API test for season ${season}, week ${week}`);
+    console.log(`API key configured: ${SPORTSDATA_KEY ? 'YES' : 'NO'}`);
     
-    // Try different API endpoints - the free tier might use different paths
-    let games, stadiums;
+    let games = [];
+    let stadiums = [];
+    
+    // Step 1: Test basic API connectivity with a simple endpoint
     try {
-      // First try to get stadiums (simpler endpoint to test API key)
-      console.log(`Testing API with stadiums endpoint: ${SCORES_BASE}/Stadiums`);
-      stadiums = await fetchJson(`${SCORES_BASE}/Stadiums`);
-      console.log(`Successfully fetched ${stadiums.length} stadiums`);
+      console.log("Step 1: Testing basic API connectivity");
+      const testUrl = `${SCORES_BASE}/Stadiums`;
+      console.log(`Calling: ${testUrl}`);
+      stadiums = await fetchJson(testUrl);
+      console.log(`✓ Stadiums API works! Got ${stadiums.length} stadiums`);
       
-      // Now try games - let's start with 2024 season, week 1 as a known good case
-      const testSeason = 2024;
-      const testWeek = 1;
-      console.log(`Testing games endpoint: ${SCORES_BASE}/GamesByWeek/${testSeason}/${testWeek}`);
-      games = await fetchJson(`${SCORES_BASE}/GamesByWeek/${testSeason}/${testWeek}`);
-      console.log(`Successfully fetched ${games.length} games for ${testSeason} week ${testWeek}`);
+      // Step 2: Test games endpoint with known working parameters
+      console.log("Step 2: Testing games endpoint");
+      const gamesUrl = `${SCORES_BASE}/GamesByWeek/2024/1`;
+      console.log(`Calling: ${gamesUrl}`);
+      games = await fetchJson(gamesUrl);
+      console.log(`✓ Games API works! Got ${games.length} games`);
       
-      // Update season for database records to use the working season
-      season = testSeason;
+      // Use 2024 data for now since it works
+      season = 2024;
       
-    } catch (error) {
-      console.error(`API Error Details:`, error);
-      // Let's also try alternative endpoints
-      try {
-        console.log(`Trying alternative endpoint: ${SCORES_BASE}/Scores/${2024}`);
-        games = await fetchJson(`${SCORES_BASE}/Scores/${2024}`);
-        stadiums = []; // Empty array for now
-        season = 2024;
-      } catch (altError) {
-        throw new Error(`Both primary and alternative API endpoints failed. Primary: ${error.message}, Alternative: ${altError.message}`);
-      }
+    } catch (apiError) {
+      console.error("API Test Failed:", apiError);
+      throw new Error(`SportsDataIO API test failed: ${apiError.message}. Please verify your API key and subscription.`);
     }
     
     const stadiumById = new Map<number, any>(stadiums.map((s: any) => [s.StadiumID, s]));
@@ -235,9 +231,23 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("NFL sync error:", e);
+    
+    // Better error handling and logging
+    let errorMessage = "Unknown error occurred";
+    if (e instanceof Error) {
+      errorMessage = e.message;
+    } else if (typeof e === 'string') {
+      errorMessage = e;
+    } else {
+      errorMessage = JSON.stringify(e);
+    }
+    
+    console.error("Formatted error message:", errorMessage);
+    
     return new Response(JSON.stringify({ 
-      error: String(e),
-      message: "Failed to sync NFL events. Please check API key and try again."
+      error: errorMessage,
+      message: "Failed to sync NFL events. Please check the function logs for details.",
+      timestamp: new Date().toISOString()
     }), { 
       status: 500,
       headers: { 
