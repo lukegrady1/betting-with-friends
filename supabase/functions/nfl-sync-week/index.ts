@@ -15,10 +15,27 @@ async function fetchJson(url: string) {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
+    return new Response("ok", {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
+    });
+  }
+
   try {
     // Only allow POST requests
     if (req.method !== "POST") {
-      return new Response("Method not allowed", { status: 405 });
+      return new Response("Method not allowed", { 
+        status: 405,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/json",
+        }
+      });
     }
 
     const { searchParams } = new URL(req.url);
@@ -27,7 +44,13 @@ serve(async (req) => {
     const leagueId = searchParams.get("leagueId");
     
     if (!season || !week || !leagueId) {
-      return new Response("Missing season, week, or leagueId", { status: 400 });
+      return new Response("Missing season, week, or leagueId", { 
+        status: 400,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/json",
+        }
+      });
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -46,7 +69,13 @@ serve(async (req) => {
       if (new Date(lastSync.last_synced_at) > hourAgo) {
         return new Response(
           JSON.stringify({ error: "Already synced within the last hour" }), 
-          { status: 429 }
+          { 
+            status: 429,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Content-Type": "application/json",
+            }
+          }
         );
       }
     }
@@ -108,7 +137,10 @@ serve(async (req) => {
       events: data,
       message: `Synced ${data?.length ?? 0} events for week ${week} of ${season} season`
     }), {
-      headers: { "content-type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
+      },
       status: 200,
     });
   } catch (e) {
@@ -118,7 +150,10 @@ serve(async (req) => {
       message: "Failed to sync NFL events. Please check API key and try again."
     }), { 
       status: 500,
-      headers: { "content-type": "application/json" }
+      headers: { 
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
+      }
     });
   }
 });
