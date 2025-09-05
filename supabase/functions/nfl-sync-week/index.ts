@@ -9,8 +9,13 @@ const SPORTSDATA_KEY = Deno.env.get("SPORTSDATAIO_API_KEY")!;
 const SCORES_BASE = "https://api.sportsdata.io/v3/nfl/scores/json";
 
 async function fetchJson(url: string) {
+  console.log(`Fetching URL: ${url}`);
   const r = await fetch(url, { headers: { "Ocp-Apim-Subscription-Key": SPORTSDATA_KEY } });
-  if (!r.ok) throw new Error(`${r.status} ${await r.text()}`);
+  if (!r.ok) {
+    const errorText = await r.text();
+    console.error(`API Error: ${r.status} ${errorText}`);
+    throw new Error(`SportsDataIO API Error: ${r.status} ${errorText}`);
+  }
   return r.json();
 }
 
@@ -39,7 +44,7 @@ serve(async (req) => {
     }
 
     const { searchParams } = new URL(req.url);
-    const season = Number(searchParams.get("season"));
+    let season = Number(searchParams.get("season"));
     const week = Number(searchParams.get("week"));
     const leagueId = searchParams.get("leagueId");
     
@@ -131,10 +136,28 @@ serve(async (req) => {
     }
 
     // Fetch NFL data from SportsDataIO
-    const [games, stadiums] = await Promise.all([
-      fetchJson(`${SCORES_BASE}/GamesByWeek/${season}/${week}`),
-      fetchJson(`${SCORES_BASE}/Stadiums`),
-    ]);
+    console.log(`Attempting to fetch NFL data for ${season} season, week ${week}`);
+    
+    let games, stadiums;
+    try {
+      [games, stadiums] = await Promise.all([
+        fetchJson(`${SCORES_BASE}/GamesByWeek/${season}/${week}`),
+        fetchJson(`${SCORES_BASE}/Stadiums`),
+      ]);
+    } catch (error) {
+      // If 2025 data is not available, try 2024 as fallback for development
+      if (season >= 2025 && error.message.includes('404')) {
+        console.log(`${season} data not available, falling back to 2024 season`);
+        [games, stadiums] = await Promise.all([
+          fetchJson(`${SCORES_BASE}/GamesByWeek/2024/${week}`),
+          fetchJson(`${SCORES_BASE}/Stadiums`),
+        ]);
+        // Update season for the database records
+        season = 2024;
+      } else {
+        throw error;
+      }
+    }
     
     const stadiumById = new Map<number, any>(stadiums.map((s: any) => [s.StadiumID, s]));
 

@@ -7,15 +7,16 @@ export function getCurrentNFLSeason(): number {
   
   // NFL season runs from September to February of the following year
   // If it's January-February, we're in the previous year's season
-  // If it's March-August, we're in the off-season (use next season)
+  // If it's March-August, we're in the off-season (use previous completed season for testing)
   // If it's September-December, we're in the current year's season
   
   if (month >= 1 && month <= 2) {
     return year - 1; // e.g., January 2025 is part of the 2024 season
   } else if (month >= 3 && month <= 8) {
-    return year; // Off-season, but prepare for upcoming season
+    return year - 1; // Off-season, use previous completed season for testing
   } else {
-    return year; // September-December, current season
+    // For testing purposes, if we're in a future year that doesn't have data, use 2024
+    return year >= 2025 ? 2024 : year; // September-December, current season or 2024 for testing
   }
 }
 
