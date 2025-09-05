@@ -14,6 +14,8 @@ import { CreateEventPage } from "./routes/leagues/CreateEventPage";
 import { LeaderboardPage } from "./routes/leagues/LeaderboardPage";
 import { AnalyticsPage } from "./routes/leagues/AnalyticsPage";
 
+const basename = import.meta.env.PROD ? '/betting-with-friends' : '';
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -33,4 +35,4 @@ export const router = createBrowserRouter([
   },
   { path: "/auth/signin", element: <AuthProvider><AuthLayout><SignInPage/></AuthLayout></AuthProvider> },
   { path: "/auth/callback", element: <AuthProvider><AuthLayout><Callback/></AuthLayout></AuthProvider> },
-]);
+], { basename });
