@@ -22,6 +22,11 @@ export default function SignInPage() {
     // Construct the correct callback URL based on environment
     const baseUrl = import.meta.env.PROD ? '/betting-with-friends' : '';
     const callbackUrl = `${window.location.origin}${baseUrl}/auth/callback`;
+    
+    // Debug: Log the callback URL to console
+    console.log('Magic link callback URL:', callbackUrl);
+    console.log('Environment PROD:', import.meta.env.PROD);
+    console.log('Window origin:', window.location.origin);
 
     const { error } = await supabase.auth.signInWithOtp({
       email,
