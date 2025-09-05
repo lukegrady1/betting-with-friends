@@ -22,9 +22,6 @@ export default function SignInPage() {
     setError('');
     setMessage('');
 
-    // Construct the correct callback URL based on environment
-    const baseUrl = import.meta.env.PROD ? '/betting-with-friends' : '';
-    const callbackUrl = `${window.location.origin}${baseUrl}/auth/callback`;
 
     if (isSignUp) {
       const { error } = await supabase.auth.signUp({
