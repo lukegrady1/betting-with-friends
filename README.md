@@ -6,6 +6,7 @@ A mobile-first web application for tracking sports betting picks privately among
 
 - **Private picks until kickoff**: Picks remain hidden from other players until the event starts
 - **League management**: Create and join leagues with invite codes
+- **NFL Integration**: Automatic NFL schedule sync with SportsDataIO API
 - **Multiple bet types**: Moneyline, spread, and total bets with American odds
 - **Automatic grading**: Picks are automatically scored when events are finalized
 - **Leaderboards**: Track wins, losses, win percentage, units risked, and profit/loss
@@ -40,26 +41,75 @@ A mobile-first web application for tracking sports betting picks privately among
      - `000_init.sql` - Creates tables
      - `010_rls.sql` - Sets up Row Level Security
      - `020_functions_and_views.sql` - Creates functions and views
+     - `030_events_nfl_integration.sql` - Adds NFL integration support
 
-3. **Configure environment**
+3. **Set up SportsDataIO API (Optional - for NFL integration)**
+   - Sign up for a free account at [SportsDataIO](https://sportsdata.io/)
+   - Get your API key from the dashboard
+   - You'll need to configure this in your Supabase Edge Functions environment
+
+4. **Deploy Supabase Edge Functions**
+   ```bash
+   # Install Supabase CLI if you haven't already
+   npm install -g supabase
+   
+   # Login to Supabase
+   supabase login
+   
+   # Link your project
+   supabase link --project-ref your_project_ref
+   
+   # Deploy the NFL sync function
+   supabase functions deploy nfl-sync-week
+   
+   # Set the SportsDataIO API key as an environment secret
+   supabase secrets set SPORTSDATAIO_API_KEY=your_api_key_here
+   ```
+
+5. **Configure environment**
    ```bash
    cd web
    cp .env.example .env.local
    ```
    
-   Update `.env.local` with your Supabase credentials:
+   Update `.env.local` with your configuration:
    ```
    VITE_SUPABASE_URL=your_supabase_url
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   VITE_PUBLIC_FUNCTIONS_URL=https://your_project_ref.supabase.co/functions/v1
    ```
 
-4. **Install dependencies and start development server**
+6. **Install dependencies and start development server**
    ```bash
    npm install
    npm run dev
    ```
 
 The app will be available at `http://localhost:5173`
+
+## NFL Integration
+
+The app includes automatic NFL schedule synchronization using the SportsDataIO API. Features include:
+
+- **Automatic Schedule Sync**: League admins can sync current NFL week games with venue information
+- **Team Name Formatting**: Displays full team names (e.g., "Patriots" instead of "NE")  
+- **Season/Week Tracking**: Automatically calculates current NFL season and week
+- **Venue Information**: Shows stadium names, cities, and states
+- **Rate Limiting**: Prevents excessive API calls with 1-hour cooldown periods
+
+### How NFL Sync Works
+
+1. League admins see a "Sync NFL Week" button on the Events page
+2. Clicking the button calls the `nfl-sync-week` Supabase Edge Function
+3. The function fetches current week games from SportsDataIO API
+4. Games are upserted into the `events` table with venue and team information
+5. Users can then make picks on the synchronized games
+
+### NFL Sync Requirements
+
+- SportsDataIO API key configured in Supabase Edge Functions
+- League admin permissions
+- Edge Function deployed to Supabase
 
 ## Database Schema
 
@@ -68,10 +118,11 @@ The application uses the following main tables:
 - `profiles` - User profiles
 - `leagues` - Betting leagues
 - `league_members` - League membership with roles
-- `events` - Sports events/games
+- `events` - Sports events/games (includes NFL venue fields and external provider tracking)
 - `picks` - User betting picks
 - `picks_visible` - View that handles pick privacy
 - `league_user_stats` - Leaderboard statistics
+- `sync_log` - Tracks NFL API sync operations and rate limiting
 
 ## Security Features
 
