@@ -33,6 +33,16 @@ export const router = createBrowserRouter([
       { path: "leagues/:leagueId/analytics", element: <AnalyticsPage/> },
     ],
   },
-  { path: "/auth/signin", element: <AuthProvider><AuthLayout><SignInPage/></AuthLayout></AuthProvider> },
-  { path: "/auth/callback", element: <AuthProvider><AuthLayout><Callback/></AuthLayout></AuthProvider> },
+  { 
+    path: "/auth/signin", 
+    element: <AuthProvider><AuthLayout><SignInPage/></AuthLayout></AuthProvider> 
+  },
+  { 
+    path: "/auth/callback", 
+    element: <AuthProvider><AuthLayout><Callback/></AuthLayout></AuthProvider> 
+  },
+  {
+    path: "*",
+    element: <AuthProvider><AuthLayout><SignInPage/></AuthLayout></AuthProvider>
+  }
 ], { basename });
