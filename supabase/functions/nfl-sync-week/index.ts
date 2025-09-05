@@ -6,12 +6,8 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!; // for DB writes
 const SPORTSDATA_KEY = Deno.env.get("SPORTSDATAIO_API_KEY")!;
 
-// SportsDataIO API endpoints - try different versions
-const API_ENDPOINTS = {
-  v3: "https://api.sportsdata.io/v3/nfl/scores/json",
-  v4: "https://api.sportsdata.io/v4/nfl/scores/json", 
-  trial: "https://api.sportsdata.io/api/nfl/fantasy/json"
-};
+// SportsDataIO API endpoints - correct format based on documentation
+const API_BASE = "https://api.sportsdata.io/v3/nfl/scores/json";
 
 async function fetchJson(url: string) {
   console.log(`Fetching URL: ${url}`);
@@ -154,37 +150,46 @@ serve(async (req) => {
     let stadiums = [];
     let workingEndpoint = null;
     
-    // Try different API endpoints to find one that works
+    // Try different API endpoints with correct SportsDataIO format
     const endpointsToTest = [
-      { name: "v3", base: API_ENDPOINTS.v3, stadiums: "/Stadiums", games: "/GamesByWeek/2024/1" },
-      { name: "v4", base: API_ENDPOINTS.v4, stadiums: "/Stadiums", games: "/GamesByWeek/2024/1" },
-      { name: "trial", base: API_ENDPOINTS.trial, stadiums: "/Teams", games: "/Schedules/2024" }
+      { name: "basic-teams", base: API_BASE, endpoint: "/Teams", description: "Test basic connectivity with Teams" },
+      { name: "stadiums", base: API_BASE, endpoint: "/Stadiums", description: "Get stadium information" },
+      { name: "schedules", base: API_BASE, endpoint: "/Schedules/2024REG", description: "Get 2024 regular season schedule" },
+      { name: "games-by-week", base: API_BASE, endpoint: "/GamesByWeek/2024REG/1", description: "Get games for 2024 regular season week 1" },
+      { name: "scores-basic", base: API_BASE, endpoint: "/Scores/2024REG/1", description: "Get scores for 2024 regular season week 1" }
     ];
     
     for (const endpoint of endpointsToTest) {
       try {
-        console.log(`\n=== Testing ${endpoint.name} endpoint ===`);
-        console.log(`Base URL: ${endpoint.base}`);
+        console.log(`\n=== Testing ${endpoint.name}: ${endpoint.description} ===`);
         
-        // Test basic connectivity first
-        const testUrl = `${endpoint.base}${endpoint.stadiums}`;
+        const testUrl = `${endpoint.base}${endpoint.endpoint}`;
         console.log(`Testing: ${testUrl}`);
         const testResult = await fetchJson(testUrl);
-        console.log(`✓ ${endpoint.name} API responded! Got ${Array.isArray(testResult) ? testResult.length : 'some'} items`);
+        console.log(`✓ ${endpoint.name} works! Got ${Array.isArray(testResult) ? testResult.length : 'some'} items`);
         
-        // If that worked, try games
-        const gamesUrl = `${endpoint.base}${endpoint.games}`;
-        console.log(`Testing games: ${gamesUrl}`);
-        const gamesResult = await fetchJson(gamesUrl);
-        console.log(`✓ ${endpoint.name} games API works! Got ${Array.isArray(gamesResult) ? gamesResult.length : 'some'} items`);
-        
-        // Success! Use this endpoint
-        workingEndpoint = endpoint.name;
-        stadiums = Array.isArray(testResult) ? testResult : [];
-        games = Array.isArray(gamesResult) ? gamesResult : [];
-        season = 2024;
-        console.log(`\n🎉 Found working API: ${endpoint.name}`);
-        break;
+        // If this is a games/schedule endpoint, use it for games data
+        if (endpoint.name.includes('games') || endpoint.name.includes('schedules') || endpoint.name.includes('scores')) {
+          games = Array.isArray(testResult) ? testResult : [];
+          workingEndpoint = endpoint.name;
+          season = 2024;
+          console.log(`🎉 Found working games API: ${endpoint.name}`);
+          
+          // Try to get stadiums too, but don't fail if it doesn't work
+          try {
+            const stadiumsUrl = `${endpoint.base}/Stadiums`;
+            console.log(`Also trying to get stadiums: ${stadiumsUrl}`);
+            stadiums = await fetchJson(stadiumsUrl);
+            console.log(`✓ Also got ${stadiums.length} stadiums`);
+          } catch (stadiumError) {
+            console.log(`⚠️ Stadiums endpoint failed, continuing with empty stadiums: ${stadiumError.message}`);
+            stadiums = [];
+          }
+          
+          break;
+        } else {
+          console.log(`ℹ️ ${endpoint.name} works but doesn't contain games data, continuing...`);
+        }
         
       } catch (error) {
         console.log(`❌ ${endpoint.name} failed: ${error.message}`);
