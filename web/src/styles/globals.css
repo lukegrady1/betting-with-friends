@@ -1,0 +1,193 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Base */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 12%; /* ≈ #1F1F1F for text */
+
+  /* Brand */
+  --primary: 225 90% 58%;    /* #3664F4 */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 200 100% 69%; /* #60CBFF */
+  --secondary-foreground: 222 47% 11%;
+
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 42%;
+
+  --accent: 200 100% 69%;
+  --accent-foreground: 222 47% 11%;
+
+  --destructive: 0 76% 62%;  /* #E85353 */
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 0 0% 88%;
+  --input: 0 0% 92%;
+  --ring: 225 90% 58%;
+
+  --card: var(--background);
+  --card-foreground: var(--foreground);
+
+  --radius: 1rem; /* 16px, pillish but not bubbly */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: 0 0% 9%;   /* ≈ #171717 */
+    --foreground: 0 0% 96%;
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 70%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --card: 0 0% 14%;
+  }
+}
+
+body { 
+  @apply bg-background text-foreground antialiased; 
+}
+
+.container-responsive { 
+  @apply mx-auto w-full max-w-screen-sm px-3 sm:max-w-screen-md md:max-w-screen-lg; 
+}
+
+.card { 
+  @apply rounded-2xl border bg-card text-card-foreground shadow-sm; 
+}
+
+.soft { 
+  box-shadow: 0 1px 2px hsl(0 0% 0% / 0.05), 0 8px 40px hsl(225 90% 20% / 0.08); 
+}
+
+.badge { 
+  @apply inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs; 
+}
+
+/* Loading spinner */
+.loading-spinner {
+  @apply inline-block animate-spin rounded-full border-2 border-current border-t-transparent;
+}
+
+/* Page container wrapper */
+.page-container {
+  @apply min-h-screen bg-background;
+}
+
+/* Mobile navigation */
+.mobile-nav {
+  @apply fixed bottom-0 left-0 right-0 z-50 border-t bg-background/80 backdrop-blur-sm;
+}
+
+/* Desktop layout */
+@media (min-width: 768px) {
+  .desktop-container {
+    @apply flex min-h-screen;
+  }
+  
+  .desktop-sidebar {
+    @apply w-64 border-r bg-muted/40;
+  }
+  
+  .desktop-main {
+    @apply flex-1 overflow-y-auto;
+  }
+}
+
+/* Interactive elements */
+.interactive {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+.interactive:hover {
+  @apply -translate-y-0.5 shadow-md;
+}
+
+/* Form elements */
+.form-input {
+  @apply w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+.form-label {
+  @apply text-sm font-semibold leading-none text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70;
+}
+
+/* Error and success messages */
+.alert-error {
+  @apply rounded-xl border border-destructive/50 bg-destructive/10 p-4 text-destructive;
+}
+
+.alert-success {
+  @apply rounded-xl border border-green-500/50 bg-green-50 p-4 text-green-800;
+}
+
+/* Text utilities */
+.text-gradient {
+  @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+}
+
+.text-premium {
+  @apply font-semibold text-foreground;
+}
+
+/* Glass effect utility */
+.glass {
+  @apply rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm;
+}
+
+/* Focus states */
+.focus-ring {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+}
+
+/* Animations */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes spinSmooth {
+  to { transform: rotate(360deg); }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.animate-spinSmooth {
+  animation: spinSmooth 1.2s linear infinite;
+}
+
+/* Skeleton loading */
+.skeleton {
+  @apply animate-pulse rounded bg-muted;
+}
+
+/* Hover elevations */
+.hover-lift:hover {
+  @apply -translate-y-px shadow-lg transition-all duration-200;
+}
+
+/* Responsive utilities */
+@media (max-width: 767px) {
+  .mobile-only {
+    @apply block;
+  }
+  
+  .desktop-only {
+    @apply hidden;
+  }
+}
+
+@media (min-width: 768px) {
+  .mobile-only {
+    @apply hidden;
+  }
+  
+  .desktop-only {
+    @apply block;
+  }
+}
