@@ -9,10 +9,10 @@ import { CreateLeaguePage } from "./routes/leagues/CreateLeaguePage";
 import { JoinLeaguePage } from "./routes/leagues/JoinLeaguePage";
 import { LeagueHomePage } from "./routes/leagues/LeagueHomePage";
 import { PicksPage } from "./routes/leagues/PicksPage";
-import { EventsPage } from "./routes/leagues/EventsPage";
-import { CreateEventPage } from "./routes/leagues/CreateEventPage";
+import { SlipUploadPage } from "./routes/leagues/SlipUploadPage";
 import { LeaderboardPage } from "./routes/leagues/LeaderboardPage";
 import { AnalyticsPage } from "./routes/leagues/AnalyticsPage";
+import { SettingsPage } from "./routes/leagues/SettingsPage";
 import { NewPickPage } from "./routes/leagues/NewPickPage";
 
 const basename = import.meta.env.PROD ? '/betting-with-friends' : '';
@@ -27,12 +27,11 @@ export const router = createBrowserRouter([
       { path: "leagues/create", element: <CreateLeaguePage/> },
       { path: "leagues/join", element: <JoinLeaguePage/> },
       { path: "leagues/:leagueId", element: <LeagueHomePage/> },
+      { path: "leagues/:leagueId/upload", element: <SlipUploadPage/> },
       { path: "leagues/:leagueId/picks", element: <PicksPage/> },
-      { path: "leagues/:leagueId/picks/new", element: <NewPickPage/> },
-      { path: "leagues/:leagueId/events", element: <EventsPage/> },
-      { path: "leagues/:leagueId/events/create", element: <CreateEventPage/> },
       { path: "leagues/:leagueId/leaderboard", element: <LeaderboardPage/> },
       { path: "leagues/:leagueId/analytics", element: <AnalyticsPage/> },
+      { path: "leagues/:leagueId/settings", element: <SettingsPage/> },
     ],
   },
   { 

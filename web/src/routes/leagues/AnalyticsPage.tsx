@@ -215,29 +215,26 @@ export function AnalyticsPage() {
   return (
     <MobileShell 
       title="Analytics" 
+      activeTab="analytics"
       showBottomNav={false} 
       showDesktopSidebar={true}
       onBack={() => navigate(`/leagues/${leagueId}`)}
     >
-      <div className="px-4 py-6 space-y-6 md:px-0 md:py-0">
+      <div className="px-4 py-6 space-y-8 md:px-12 md:py-12">
         {/* Desktop Hero */}
-        <div className="hidden md:block mb-12">
-          <div className="text-center mb-16">
-            <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-2xl relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
-              <span className="text-2xl font-bold text-white relative z-10">📊</span>
-            </div>
-            <h1 className="text-6xl font-black text-gradient mb-4 tracking-tight">
+        <div className="hidden md:block mb-8">
+          <div className="mb-12">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
               Analytics
             </h1>
-            <p className="text-xl text-neutral-600 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-gray-600">
               Deep insights into league performance and trends
             </p>
           </div>
         </div>
 
         {/* Timeframe Filter */}
-        <div className="flex items-center justify-center space-x-2 mb-6">
+        <div className="flex items-center justify-center space-x-1 mb-8">
           {([
             { value: '7d', label: '7 Days' },
             { value: '30d', label: '30 Days' },
@@ -248,6 +245,11 @@ export function AnalyticsPage() {
               onClick={() => setTimeframe(value)}
               variant={timeframe === value ? 'default' : 'ghost'}
               size="sm"
+              className={`${
+                timeframe === value 
+                  ? 'bg-gray-900 text-white hover:bg-gray-800' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
             >
               {label}
             </Button>
@@ -255,58 +257,41 @@ export function AnalyticsPage() {
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card className="text-center p-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <Target size={24} className="text-blue-600" />
-            </div>
-            <div className="text-2xl font-bold text-premium mb-1">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <Card className="text-center p-6 border-gray-200">
+            <div className="text-2xl font-semibold text-gray-900 mb-1">
               {analytics.totalPicks}
             </div>
-            <div className="text-xs text-neutral-600 font-medium">Total Picks</div>
+            <div className="text-sm text-gray-600">Total Picks</div>
           </Card>
 
-          <Card className="text-center p-4">
-            <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <Percent size={24} className="text-green-600" />
-            </div>
-            <div className="text-2xl font-bold text-green-600 mb-1">
+          <Card className="text-center p-6 border-gray-200">
+            <div className="text-2xl font-semibold text-green-600 mb-1">
               {formatPercentage(analytics.avgWinRate || 0)}
             </div>
-            <div className="text-xs text-neutral-600 font-medium">Avg Win Rate</div>
+            <div className="text-sm text-gray-600">Avg Win Rate</div>
           </Card>
 
-          <Card className="text-center p-4">
-            <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <DollarSign size={24} className="text-purple-600" />
-            </div>
-            <div className="text-2xl font-bold text-premium mb-1">
+          <Card className="text-center p-6 border-gray-200">
+            <div className="text-2xl font-semibold text-gray-900 mb-1">
               {analytics.totalVolume.toFixed(0)}u
             </div>
-            <div className="text-xs text-neutral-600 font-medium">Total Volume</div>
+            <div className="text-sm text-gray-600">Total Volume</div>
           </Card>
 
-          <Card className="text-center p-4">
-            <div className="w-12 h-12 bg-yellow-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <Users size={24} className="text-yellow-600" />
-            </div>
-            <div className="text-2xl font-bold text-premium mb-1">
+          <Card className="text-center p-6 border-gray-200">
+            <div className="text-2xl font-semibold text-gray-900 mb-1">
               {analytics.totalMembers}
             </div>
-            <div className="text-xs text-neutral-600 font-medium">Active Members</div>
+            <div className="text-sm text-gray-600">Active Members</div>
           </Card>
         </div>
 
         {/* Market Performance */}
-        <Card className="p-6">
-          <div className="flex items-center mb-6">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mr-3">
-              <PieChart size={18} className="text-white" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-premium">Market Performance</h3>
-              <p className="text-sm text-neutral-600">Performance by betting market</p>
-            </div>
+        <Card className="p-6 border-gray-200">
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Market Performance</h3>
+            <p className="text-gray-600">Performance by betting market</p>
           </div>
 
           {analytics.marketStats.length === 0 ? (

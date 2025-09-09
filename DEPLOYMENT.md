@@ -40,6 +40,16 @@ supabase db push
 
 ## Step 4: Deploy Edge Function
 
+Since the Supabase CLI requires special installation, you can deploy the function manually:
+
+1. Go to your Supabase Dashboard
+2. Navigate to Edge Functions
+3. Click "Create a new function"
+4. Name it `nfl-sync-week`
+5. Copy the contents of `supabase/functions/nfl-sync-week/index.ts` 
+6. Paste it into the function editor and deploy
+
+Or if you have the Supabase CLI installed locally:
 ```bash
 # Deploy the NFL sync function
 supabase functions deploy nfl-sync-week

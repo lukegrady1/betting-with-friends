@@ -38,3 +38,19 @@ export async function syncWeek({
   
   return response.json();
 }
+
+export async function syncSeason({ season, leagueId }: { season: number; leagueId?: string }) {
+  const base = import.meta.env.VITE_PUBLIC_FUNCTIONS_URL;
+  if (!base) {
+    throw new Error('VITE_PUBLIC_FUNCTIONS_URL environment variable is not set');
+  }
+
+  const u = new URL(`${base}/nfl-schedules`);
+  u.searchParams.set("season", String(season));
+  if (leagueId) u.searchParams.set("league_id", leagueId);
+  u.searchParams.set("mode", "upsert");
+  
+  const r = await fetch(u.toString());
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}

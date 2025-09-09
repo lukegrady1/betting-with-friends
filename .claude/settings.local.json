@@ -20,7 +20,12 @@
       "Bash(git push:*)",
       "WebFetch(domain:lukegrady1.github.io)",
       "Bash(git merge:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npm run deploy:*)",
+      "Bash(npm run:*)",
+      "Bash(supabase functions deploy:*)",
+      "WebFetch(domain:sportsdata.io)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []

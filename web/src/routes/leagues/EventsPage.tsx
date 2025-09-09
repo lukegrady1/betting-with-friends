@@ -19,7 +19,7 @@ import { MobileShell } from '../../components/Layout/MobileShell';
 import { Card } from '../../components/UI/Card';
 import { Button } from '../../components/UI/Button';
 import { EmptyState } from '../../components/UI/EmptyState';
-import { syncWeek } from '../../lib/functions';
+import { syncWeek, syncSeason } from '../../lib/functions';
 import { useSeasonWeek, formatKickoff, formatTeamName } from '../../lib/nfl';
 
 interface Event {
@@ -47,28 +47,51 @@ interface EventWithPickCount extends Event {
   user_has_pick: boolean;
 }
 
-// Sync Week Button Component
-function SyncWeekButton({ season, week, leagueId }: { season: number; week: number; leagueId: string }) {
+// Sync Controls Component
+function SyncControls({ season, week, leagueId }: { season: number; week: number; leagueId: string }) {
   const queryClient = useQueryClient();
-  const { mutate, isPending, error } = useMutation({
+  
+  const syncWeekMutation = useMutation({
     mutationFn: () => syncWeek({ season, week, leagueId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['league-events', leagueId] });
     },
   });
 
+  const syncSeasonMutation = useMutation({
+    mutationFn: () => syncSeason({ season, leagueId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['league-events', leagueId] });
+    },
+  });
+
+  const anyPending = syncWeekMutation.isPending || syncSeasonMutation.isPending;
+  const error = syncWeekMutation.error || syncSeasonMutation.error;
+
   return (
-    <div className="flex flex-col items-end space-y-1">
-      <Button 
-        size="sm" 
-        variant="secondary" 
-        onClick={() => mutate()} 
-        disabled={isPending} 
-        className="rounded-xl"
-      >
-        <RefreshCw size={16} className={`mr-1 ${isPending ? 'animate-spin' : ''}`} />
-        {isPending ? "Syncing…" : "Sync NFL Week"}
-      </Button>
+    <div className="flex flex-col items-end space-y-2">
+      <div className="flex items-center space-x-2">
+        <Button 
+          size="sm" 
+          variant="secondary" 
+          onClick={() => syncWeekMutation.mutate()} 
+          disabled={anyPending} 
+          className="rounded-xl"
+        >
+          <RefreshCw size={16} className={`mr-1 ${syncWeekMutation.isPending ? 'animate-spin' : ''}`} />
+          {syncWeekMutation.isPending ? "Syncing…" : "Sync Week"}
+        </Button>
+        <Button 
+          size="sm" 
+          variant="secondary" 
+          onClick={() => syncSeasonMutation.mutate()} 
+          disabled={anyPending} 
+          className="rounded-xl"
+        >
+          <RefreshCw size={16} className={`mr-1 ${syncSeasonMutation.isPending ? 'animate-spin' : ''}`} />
+          {syncSeasonMutation.isPending ? "Syncing…" : "Sync Season"}
+        </Button>
+      </div>
       {error && (
         <div className="text-xs text-red-600 max-w-48 text-right">
           {error.message || 'Failed to sync'}
@@ -89,7 +112,7 @@ export function EventsPage() {
     queryFn: async () => {
       if (!leagueId) return [];
       
-      // Get events with pick counts
+      // Get events with pick counts, including NFL-specific fields
       const { data: eventsData, error: eventsError } = await supabase
         .from('events')
         .select(`
@@ -258,14 +281,14 @@ export function EventsPage() {
           </div>
         )}
 
-        {/* Season/Week Header and Controls */}
+        {/* Season Header and Controls */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-bold text-premium">Week {week}, {season} NFL Season</h2>
-            <p className="text-sm text-muted-foreground">Current NFL games and betting opportunities</p>
+            <h2 className="text-2xl font-bold text-premium">NFL Schedule · {season}</h2>
+            <p className="text-sm text-muted-foreground">Browse upcoming games and make your picks</p>
           </div>
           {isAdmin && leagueId && (
-            <SyncWeekButton season={season} week={week} leagueId={leagueId} />
+            <SyncControls season={season} week={week} leagueId={leagueId} />
           )}
         </div>
 
@@ -400,8 +423,8 @@ export function EventsPage() {
                         size="sm"
                         className="rounded-xl"
                       >
-                        <Target size={16} className="mr-1" />
-                        Make Pick
+                        Select
+                        <Target size={16} className="ml-2" />
                       </Button>
                     )}
                     

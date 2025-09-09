@@ -3,14 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { 
   Target, 
-  Calendar, 
   Clock, 
   Plus, 
   TrendingUp,
   TrendingDown,
   Minus,
   Eye,
-  EyeOff
+  EyeOff,
+  Camera,
+  Upload as UploadIcon
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { MobileShell } from '../../components/Layout/MobileShell';
@@ -20,16 +21,17 @@ import { EmptyState } from '../../components/UI/EmptyState';
 
 interface Pick {
   id: string;
-  event_id: string;
+  event_id: string | null;
   market: string;
   side: string;
   line: number | null;
   odds_american: number;
-  units_staked: number;
+  units_staked: number | null;
   result: string;
   profit_units: number;
   created_at: string;
-  events: {
+  slip_id?: string | null;
+  events?: {
     id: string;
     home_team: string;
     away_team: string;
@@ -37,7 +39,7 @@ interface Pick {
     status: string;
     home_score?: number;
     away_score?: number;
-  };
+  } | null;
 }
 
 interface Event {
@@ -65,7 +67,7 @@ export function PicksPage() {
         .from('picks')
         .select(`
           *,
-          events!inner(
+          events(
             id,
             home_team,
             away_team,
@@ -84,24 +86,6 @@ export function PicksPage() {
     enabled: !!leagueId,
   });
 
-  const { data: availableEvents, isLoading: eventsLoading } = useQuery({
-    queryKey: ['available-events', leagueId],
-    queryFn: async () => {
-      if (!leagueId) return [];
-      
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .eq('league_id', leagueId)
-        .gt('start_time', new Date().toISOString())
-        .eq('status', 'scheduled')
-        .order('start_time', { ascending: true });
-
-      if (error) throw error;
-      return data as Event[];
-    },
-    enabled: !!leagueId,
-  });
 
   const filteredPicks = picks?.filter(pick => {
     if (filter === 'pending') return pick.result === 'pending';
@@ -140,7 +124,7 @@ export function PicksPage() {
     return new Date(startTime) <= new Date();
   };
 
-  if (picksLoading || eventsLoading) {
+  if (picksLoading) {
     return (
       <MobileShell 
         title="My Picks" 
@@ -159,22 +143,19 @@ export function PicksPage() {
   return (
     <MobileShell 
       title="My Picks" 
+      activeTab="picks"
       showBottomNav={false} 
       showDesktopSidebar={true}
       onBack={() => navigate(`/leagues/${leagueId}`)}
     >
-      <div className="px-4 py-6 space-y-6 md:px-0 md:py-0">
+      <div className="px-4 py-6 space-y-8 md:px-12 md:py-12">
         {/* Desktop Hero */}
-        <div className="hidden md:block mb-12">
-          <div className="text-center mb-16">
-            <div className="w-20 h-20 bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-2xl relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
-              <span className="text-2xl font-bold text-white relative z-10">🎯</span>
-            </div>
-            <h1 className="text-6xl font-black text-gradient mb-4 tracking-tight">
+        <div className="hidden md:block mb-8">
+          <div className="mb-12">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
               My Picks
             </h1>
-            <p className="text-xl text-neutral-600 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-gray-600">
               Track your betting predictions and performance
             </p>
           </div>
@@ -183,96 +164,43 @@ export function PicksPage() {
         {/* Quick Stats */}
         {picks && picks.length > 0 && (
           <div className="grid grid-cols-3 gap-4 mb-6">
-            <Card className="text-center p-4">
-              <div className="text-2xl font-bold text-premium mb-1">
+            <Card className="text-center p-4 border-gray-200">
+              <div className="text-2xl font-semibold text-gray-900 mb-1">
                 {picks.filter(p => p.result === 'pending').length}
               </div>
-              <div className="text-xs text-neutral-600 font-medium">Pending</div>
+              <div className="text-sm text-gray-600">Pending</div>
             </Card>
-            <Card className="text-center p-4">
-              <div className="text-2xl font-bold text-green-600 mb-1">
+            <Card className="text-center p-4 border-gray-200">
+              <div className="text-2xl font-semibold text-green-600 mb-1">
                 {picks.filter(p => p.result === 'win').length}
               </div>
-              <div className="text-xs text-neutral-600 font-medium">Wins</div>
+              <div className="text-sm text-gray-600">Wins</div>
             </Card>
-            <Card className="text-center p-4">
-              <div className="text-2xl font-bold text-red-600 mb-1">
+            <Card className="text-center p-4 border-gray-200">
+              <div className="text-2xl font-semibold text-red-600 mb-1">
                 {picks.filter(p => p.result === 'loss').length}
               </div>
-              <div className="text-xs text-neutral-600 font-medium">Losses</div>
+              <div className="text-sm text-gray-600">Losses</div>
             </Card>
           </div>
         )}
 
-        {/* Available Events for Picks */}
-        {availableEvents && availableEvents.length > 0 && (
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mr-3">
-                  <Plus size={18} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-premium">Available Events</h3>
-                  <p className="text-sm text-neutral-600">Make picks before games start</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              {availableEvents.slice(0, 3).map((event) => (
-                <div key={event.id} className="flex items-center justify-between p-3 glass rounded-xl">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                      <Calendar size={14} className="text-blue-600" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-premium">
-                        {event.away_team} @ {event.home_team}
-                      </div>
-                      <div className="text-sm text-neutral-600 flex items-center">
-                        <Clock size={12} className="mr-1" />
-                        {new Date(event.start_time).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: 'numeric',
-                          minute: '2-digit'
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={() => navigate(`/leagues/${leagueId}/events/${event.id}/pick`)}
-                    size="sm"
-                  >
-                    Pick
-                  </Button>
-                </div>
-              ))}
-              {availableEvents.length > 3 && (
-                <Button
-                  onClick={() => navigate(`/leagues/${leagueId}/events`)}
-                  variant="ghost"
-                  className="w-full"
-                >
-                  View All Events
-                </Button>
-              )}
-            </div>
-          </Card>
-        )}
 
         {/* Filter Controls */}
         {picks && picks.length > 0 && (
           <div className="flex items-center justify-between">
-            <div className="flex space-x-2">
+            <div className="flex space-x-1">
               {(['all', 'pending', 'completed'] as const).map((filterType) => (
                 <Button
                   key={filterType}
                   onClick={() => setFilter(filterType)}
                   variant={filter === filterType ? 'default' : 'ghost'}
                   size="sm"
-                  className="capitalize"
+                  className={`capitalize ${
+                    filter === filterType 
+                      ? 'bg-gray-900 text-white hover:bg-gray-800' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
                 >
                   {filterType}
                 </Button>
@@ -283,7 +211,7 @@ export function PicksPage() {
               onClick={() => setShowHidden(!showHidden)}
               variant="ghost"
               size="sm"
-              className="flex items-center"
+              className="flex items-center text-gray-600 hover:text-gray-900"
             >
               {showHidden ? (
                 <>
@@ -306,54 +234,61 @@ export function PicksPage() {
             <EmptyState
               title={filter === 'all' ? "No picks yet" : `No ${filter} picks`}
               description={filter === 'all' ? 
-                "Make your first pick on an upcoming event" :
+                "Upload your first betting slip to get started" :
                 `You don't have any ${filter} picks`
               }
               icon={<Target className="h-12 w-12 md:h-20 md:w-20" />}
             />
-            {availableEvents && availableEvents.length > 0 && (
+            <div className="flex flex-col sm:flex-row gap-3 items-center justify-center mt-6">
               <Button
-                onClick={() => navigate(`/leagues/${leagueId}/events`)}
-                className="mt-6"
+                onClick={() => navigate(`/leagues/${leagueId}/upload`)}
               >
-                <Plus size={20} className="mr-2" />
-                Make Your First Pick
+                <UploadIcon size={20} className="mr-2" />
+                Upload Betting Slip
               </Button>
-            )}
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
             {filteredPicks.map((pick) => (
-              <Card key={pick.id} className="p-6">
+              <Card key={pick.id} className="p-6 border-gray-200">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <div className="flex items-center mb-2">
-                      <h3 className="text-lg font-bold text-premium mr-2">
-                        {pick.events.away_team} @ {pick.events.home_team}
+                    <div className="flex items-center mb-3">
+                      <h3 className="text-lg font-semibold text-gray-900 mr-3">
+                        {pick.events ? 
+                          `${pick.events.away_team} @ ${pick.events.home_team}` : 
+                          `${pick.market.toUpperCase()}: ${pick.side}${pick.line ? ` ${pick.line}` : ''}`
+                        }
                       </h3>
-                      <div className={`px-2 py-1 rounded-full text-xs font-semibold ${getResultColor(pick.result)}`}>
+                      <div className={`px-2 py-1 rounded text-xs font-medium ${getResultColor(pick.result)}`}>
                         {pick.result === 'pending' ? 'Pending' : pick.result.toUpperCase()}
                       </div>
+                      {!pick.events && pick.slip_id && (
+                        <div className="ml-2 px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                          From Slip
+                        </div>
+                      )}
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="text-neutral-500">Market:</span>
-                        <div className="font-semibold">{formatMarket(pick.market, pick.side, pick.line)}</div>
+                        <span className="text-gray-500">Market:</span>
+                        <div className="font-medium text-gray-900">{formatMarket(pick.market, pick.side, pick.line)}</div>
                       </div>
                       <div>
-                        <span className="text-neutral-500">Odds:</span>
-                        <div className="font-semibold">{formatOdds(pick.odds_american)}</div>
+                        <span className="text-gray-500">Odds:</span>
+                        <div className="font-medium text-gray-900">{formatOdds(pick.odds_american)}</div>
                       </div>
                       <div>
-                        <span className="text-neutral-500">Stake:</span>
-                        <div className="font-semibold">{pick.units_staked}u</div>
+                        <span className="text-gray-500">Stake:</span>
+                        <div className="font-medium text-gray-900">{pick.units_staked ? `${pick.units_staked}u` : '—'}</div>
                       </div>
                       <div>
-                        <span className="text-neutral-500">P&L:</span>
-                        <div className={`font-semibold flex items-center ${
+                        <span className="text-gray-500">P&L:</span>
+                        <div className={`font-medium flex items-center ${
                           pick.profit_units > 0 ? 'text-green-600' : 
-                          pick.profit_units < 0 ? 'text-red-600' : 'text-neutral-600'
+                          pick.profit_units < 0 ? 'text-red-600' : 'text-gray-600'
                         }`}>
                           {pick.profit_units > 0 && <TrendingUp size={14} className="mr-1" />}
                           {pick.profit_units < 0 && <TrendingDown size={14} className="mr-1" />}
@@ -365,20 +300,33 @@ export function PicksPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-sm text-neutral-600 pt-4 border-t border-neutral-200">
+                <div className="flex items-center justify-between text-sm text-gray-600 pt-4 border-t border-gray-200">
                   <div className="flex items-center">
                     <Clock size={14} className="mr-1" />
-                    {isStarted(pick.events.start_time) ? 'Started' : 'Starts'} {' '}
-                    {new Date(pick.events.start_time).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: 'numeric',
-                      minute: '2-digit'
-                    })}
+                    {pick.events ? (
+                      <>
+                        {isStarted(pick.events.start_time) ? 'Started' : 'Starts'} {' '}
+                        {new Date(pick.events.start_time).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit'
+                        })}
+                      </>
+                    ) : (
+                      <>
+                        Created {new Date(pick.created_at).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit'
+                        })}
+                      </>
+                    )}
                   </div>
                   
-                  {pick.events.status === 'final' && pick.events.home_score !== undefined && (
-                    <div className="font-semibold">
+                  {pick.events?.status === 'final' && pick.events.home_score !== undefined && (
+                    <div className="font-medium text-gray-900">
                       Final: {pick.events.away_team} {pick.events.away_score} - {pick.events.home_score} {pick.events.home_team}
                     </div>
                   )}

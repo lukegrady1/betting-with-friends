@@ -142,128 +142,121 @@ serve(async (req) => {
       }
     }
 
-    // Test SportsDataIO API connection with multiple endpoints
-    console.log(`Starting comprehensive API test for season ${season}, week ${week}`);
+    // Use the working SportsDataIO API endpoint format
+    console.log(`Starting NFL data sync for season ${season}, week ${week}`);
     console.log(`API key configured: ${SPORTSDATA_KEY ? 'YES' : 'NO'}`);
     
     let games = [];
-    let stadiums = [];
     let workingEndpoint = null;
     
-    // Try different API endpoints with correct SportsDataIO format
-    const endpointsToTest = [
-      { name: "basic-teams", base: API_BASE, endpoint: "/Teams", description: "Test basic connectivity with Teams" },
-      { name: "stadiums", base: API_BASE, endpoint: "/Stadiums", description: "Get stadium information" },
-      { name: "schedules", base: API_BASE, endpoint: "/Schedules/2024REG", description: "Get 2024 regular season schedule" },
-      { name: "games-by-week", base: API_BASE, endpoint: "/GamesByWeek/2024REG/1", description: "Get games for 2024 regular season week 1" },
-      { name: "scores-basic", base: API_BASE, endpoint: "/Scores/2024REG/1", description: "Get scores for 2024 regular season week 1" }
-    ];
+    // Use 2025 season as that's where the data exists per user's testing
+    const apiSeason = 2025;
     
-    for (const endpoint of endpointsToTest) {
-      try {
-        console.log(`\n=== Testing ${endpoint.name}: ${endpoint.description} ===`);
-        
-        const testUrl = `${endpoint.base}${endpoint.endpoint}`;
-        console.log(`Testing: ${testUrl}`);
-        const testResult = await fetchJson(testUrl);
-        console.log(`✓ ${endpoint.name} works! Got ${Array.isArray(testResult) ? testResult.length : 'some'} items`);
-        
-        // If this is a games/schedule endpoint, use it for games data
-        if (endpoint.name.includes('games') || endpoint.name.includes('schedules') || endpoint.name.includes('scores')) {
-          games = Array.isArray(testResult) ? testResult : [];
-          workingEndpoint = endpoint.name;
-          season = 2024;
-          console.log(`🎉 Found working games API: ${endpoint.name}`);
-          
-          // Try to get stadiums too, but don't fail if it doesn't work
-          try {
-            const stadiumsUrl = `${endpoint.base}/Stadiums`;
-            console.log(`Also trying to get stadiums: ${stadiumsUrl}`);
-            stadiums = await fetchJson(stadiumsUrl);
-            console.log(`✓ Also got ${stadiums.length} stadiums`);
-          } catch (stadiumError) {
-            console.log(`⚠️ Stadiums endpoint failed, continuing with empty stadiums: ${stadiumError.message}`);
-            stadiums = [];
-          }
-          
-          break;
-        } else {
-          console.log(`ℹ️ ${endpoint.name} works but doesn't contain games data, continuing...`);
-        }
-        
-      } catch (error) {
-        console.log(`❌ ${endpoint.name} failed: ${error.message}`);
-        continue;
+    try {
+      console.log(`Fetching NFL schedule for ${apiSeason} season...`);
+      const scheduleUrl = `${API_BASE}/Schedules/${apiSeason}`;
+      console.log(`API URL: ${scheduleUrl}`);
+      
+      const scheduleData = await fetchJson(scheduleUrl);
+      console.log(`✓ Successfully fetched ${scheduleData.length} games from SportsDataIO`);
+      
+      // Filter games for the requested week if specified
+      if (week) {
+        games = scheduleData.filter((game: any) => game.Week === week);
+        console.log(`✓ Filtered to ${games.length} games for week ${week}`);
+      } else {
+        games = scheduleData;
       }
-    }
+      
+      workingEndpoint = "schedules";
+      season = apiSeason; // Use the API season (2025)
+      
+    } catch (error) {
+      console.log(`❌ SportsDataIO API failed: ${error.message}`);
+      console.log("⚠️ Creating demo data for testing...");
     
     if (!workingEndpoint) {
       console.log("⚠️  All API endpoints failed. Creating demo data for testing...");
       
-      // Create some demo NFL games for testing purposes
+      // Create demo NFL games that match the real SportsDataIO API structure
       games = [
         {
           GameKey: "demo-1",
-          GameID: 1,
+          Season: 2025,
+          SeasonType: 1,
+          Week: week,
           HomeTeam: "KC",
-          AwayTeam: "BUF",
-          Date: "2024-09-12T20:20:00",
-          Status: "scheduled",
-          StadiumID: 1
+          AwayTeam: "BUF", 
+          DateTime: "2024-09-12T20:20:00",
+          Status: "Scheduled",
+          StadiumDetails: {
+            StadiumID: 1,
+            Name: "GEHA Field at Arrowhead Stadium", 
+            City: "Kansas City",
+            State: "MO"
+          }
         },
         {
-          GameKey: "demo-2", 
-          GameID: 2,
+          GameKey: "demo-2",
+          Season: 2025,
+          SeasonType: 1,
+          Week: week,
           HomeTeam: "BAL",
           AwayTeam: "CIN",
-          Date: "2024-09-15T13:00:00",
-          Status: "scheduled",
-          StadiumID: 2
+          DateTime: "2024-09-15T13:00:00", 
+          Status: "Scheduled",
+          StadiumDetails: {
+            StadiumID: 2,
+            Name: "M&T Bank Stadium",
+            City: "Baltimore", 
+            State: "MD"
+          }
         },
         {
           GameKey: "demo-3",
-          GameID: 3, 
+          Season: 2025,
+          SeasonType: 1,
+          Week: week,
           HomeTeam: "SF",
           AwayTeam: "LAR",
-          Date: "2024-09-15T16:25:00",
-          Status: "scheduled",
-          StadiumID: 3
+          DateTime: "2024-09-15T16:25:00",
+          Status: "Scheduled", 
+          StadiumDetails: {
+            StadiumID: 3,
+            Name: "Levi's Stadium",
+            City: "Santa Clara",
+            State: "CA"
+          }
         }
       ];
       
-      stadiums = [
-        { StadiumID: 1, Name: "GEHA Field at Arrowhead Stadium", City: "Kansas City", State: "MO" },
-        { StadiumID: 2, Name: "M&T Bank Stadium", City: "Baltimore", State: "MD" },
-        { StadiumID: 3, Name: "Levi's Stadium", City: "Santa Clara", State: "CA" }
-      ];
-      
-      season = 2024;
+      season = 2025; // Use 2025 to match the API season
       workingEndpoint = "demo";
       
       console.log(`✓ Created ${games.length} demo games for testing`);
-      console.log("Note: Replace with real SportsDataIO API once your key is working");
+      console.log("Note: This is demo data - real API data will be used when SportsDataIO API is working");
     }
-    
-    const stadiumById = new Map<number, any>(stadiums.map((s: any) => [s.StadiumID, s]));
 
     const rows = games.map((g: any) => {
-      const s = stadiumById.get(g.StadiumID) || g.StadiumDetails || {};
+      // Extract stadium details from the SportsDataIO structure
+      const stadium = g.StadiumDetails || {};
+      
       return {
         league_id: leagueId,
         external_provider: "sportsdataio",
-        external_id: String(g.GameKey ?? g.GameID),
+        external_id: String(g.GameKey),  // Use GameKey as the unique identifier
         sport: "NFL",
         league_name: "NFL",
-        season,
-        week,
-        home_team: g.HomeTeam,         // 3-letter code
-        away_team: g.AwayTeam,
-        start_time: g.Date,            // ISO; store as timestamptz
-        status: g.Status ?? "scheduled",
-        venue_name: s.Name ?? null,
-        venue_city: s.City ?? null,
-        venue_state: s.State ?? null,
-        created_by: null,              // system insert
+        season: g.Season || season,      // Use API season data
+        week: g.Week || week,            // Use API week data
+        home_team: g.HomeTeam,           // 3-letter team code
+        away_team: g.AwayTeam,           // 3-letter team code  
+        start_time: g.DateTime,          // Use DateTime field from API
+        status: g.Status?.toLowerCase() ?? "scheduled",  // Convert to lowercase
+        venue_name: stadium.Name ?? null,
+        venue_city: stadium.City ?? null,
+        venue_state: stadium.State ?? null,
+        created_by: null,                // system insert
       };
     });
 
