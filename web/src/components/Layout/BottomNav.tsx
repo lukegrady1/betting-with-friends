@@ -1,4 +1,4 @@
-import { Home, List, Calendar, Trophy } from 'lucide-react';
+import { Home, List, Upload, Trophy } from 'lucide-react';
 
 interface BottomNavProps {
   activeTab: string;
@@ -7,9 +7,9 @@ interface BottomNavProps {
 
 const tabs = [
   { id: 'home', icon: Home, label: 'Home' },
+  { id: 'upload', icon: Upload, label: 'Upload' },
   { id: 'picks', icon: List, label: 'Picks' },
-  { id: 'events', icon: Calendar, label: 'Events' },
-  { id: 'board', icon: Trophy, label: 'Board' },
+  { id: 'leaderboard', icon: Trophy, label: 'Board' },
 ];
 
 export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {

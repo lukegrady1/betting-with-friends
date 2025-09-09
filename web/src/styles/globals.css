@@ -56,7 +56,7 @@ body {
 }
 
 .card { 
-  @apply rounded-2xl border bg-card text-card-foreground shadow-sm; 
+  @apply rounded-lg border border-gray-200 bg-white text-gray-900 shadow-sm; 
 }
 
 .soft { 
@@ -85,15 +85,15 @@ body {
 /* Desktop layout */
 @media (min-width: 768px) {
   .desktop-container {
-    @apply flex min-h-screen;
+    @apply flex min-h-screen bg-white;
   }
   
   .desktop-sidebar {
-    @apply w-64 border-r bg-muted/40;
+    @apply w-64 border-r border-gray-200 bg-white;
   }
   
   .desktop-main {
-    @apply flex-1 overflow-y-auto;
+    @apply flex-1 overflow-y-auto bg-gray-50;
   }
 }
 
@@ -135,7 +135,7 @@ body {
 
 /* Glass effect utility */
 .glass {
-  @apply rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm;
+  @apply rounded-lg border border-gray-200 bg-gray-50;
 }
 
 /* Focus states */

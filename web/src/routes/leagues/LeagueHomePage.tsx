@@ -128,8 +128,89 @@ export function LeagueHomePage() {
     enabled: !!leagueId,
   });
 
+  // Get recent picks from all league members for the activity feed
+  const { data: recentPicks } = useQuery({
+    queryKey: ['league-feed', leagueId],
+    queryFn: async () => {
+      if (!leagueId) return [];
+
+      const { data, error } = await supabase
+        .from('picks')
+        .select(`
+          *,
+          events(
+            id,
+            home_team,
+            away_team,
+            start_time,
+            status,
+            home_score,
+            away_score
+          ),
+          profiles!user_id(username)
+        `)
+        .eq('league_id', leagueId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!leagueId,
+  });
+
+  // Helper functions for formatting picks
+  const formatMarket = (market: string, side: string, line: number | null) => {
+    switch (market) {
+      case 'moneyline':
+        return side === 'home' ? 'Moneyline (Home)' : 'Moneyline (Away)';
+      case 'spread':
+        const spreadText = side === 'home' ? `${line || 0}` : `+${Math.abs(line || 0)}`;
+        return `Spread ${spreadText}`;
+      case 'total':
+        return `Total ${side === 'over' ? 'Over' : 'Under'} ${line || 0}`;
+      default:
+        return market;
+    }
+  };
+
+  const formatOdds = (odds: number) => {
+    return odds > 0 ? `+${odds}` : `${odds}`;
+  };
+
+  const getResultColor = (result: string) => {
+    switch (result) {
+      case 'win': return 'text-green-600 bg-green-100';
+      case 'loss': return 'text-red-600 bg-red-100';
+      case 'push': return 'text-yellow-600 bg-yellow-100';
+      default: return 'text-blue-600 bg-blue-100';
+    }
+  };
+
+  const isStarted = (startTime: string) => {
+    return new Date(startTime) <= new Date();
+  };
+
   const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
+    if (!leagueId) return;
+    
+    switch (tab) {
+      case 'home':
+        // Already on home page
+        setActiveTab(tab);
+        break;
+      case 'upload':
+        navigate(`/leagues/${leagueId}/upload`);
+        break;
+      case 'picks':
+        navigate(`/leagues/${leagueId}/picks`);
+        break;
+      case 'leaderboard':
+        navigate(`/leagues/${leagueId}/leaderboard`);
+        break;
+      default:
+        setActiveTab(tab);
+    }
   };
 
   const handleSettings = () => {
@@ -188,166 +269,116 @@ export function LeagueHomePage() {
       onSettings={handleSettings}
       showDesktopSidebar={true}
     >
-      <div className="px-4 py-6 space-y-6 md:px-0 md:py-0">
+      <div className="px-4 py-6 space-y-8 md:px-12 md:py-12">
         {/* Desktop Hero Section */}
-        <div className="hidden md:block mb-12">
-          <div className="text-center mb-16">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-2xl relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
-              <span className="text-2xl font-bold text-white relative z-10">🏆</span>
-            </div>
-            <h1 className="text-6xl font-black text-gradient mb-4 tracking-tight">
+        <div className="hidden md:block mb-8">
+          <div className="mb-12">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
               {league.name}
             </h1>
-            <p className="text-xl text-neutral-600 max-w-2xl mx-auto leading-relaxed">
-              Your premier betting league dashboard
+            <p className="text-gray-600">
+              League Overview
             </p>
           </div>
         </div>
 
         {/* League Stats Overview */}
-        <div className="grid grid-cols-2 gap-4 mb-6 md:grid-cols-4 md:gap-6">
-          <Card className="text-center p-4">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <Users size={20} className="text-blue-600 md:size-6" />
-            </div>
-            <div className="text-2xl md:text-3xl font-bold text-premium mb-1">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
+          <Card className="p-6 border-gray-200">
+            <div className="text-2xl font-semibold text-gray-900 mb-1">
               {leagueStats?.total_members || 0}
             </div>
-            <div className="text-xs md:text-sm text-neutral-600 font-medium">Members</div>
+            <div className="text-sm text-gray-600">Members</div>
           </Card>
 
-          <Card className="text-center p-4">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <Calendar size={20} className="text-green-600 md:size-6" />
-            </div>
-            <div className="text-2xl md:text-3xl font-bold text-premium mb-1">
+          <Card className="p-6 border-gray-200">
+            <div className="text-2xl font-semibold text-gray-900 mb-1">
               {leagueStats?.total_events || 0}
             </div>
-            <div className="text-xs md:text-sm text-neutral-600 font-medium">Events</div>
+            <div className="text-sm text-gray-600">Events</div>
           </Card>
 
-          <Card className="text-center p-4">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-yellow-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <Target size={20} className="text-yellow-600 md:size-6" />
-            </div>
-            <div className="text-2xl md:text-3xl font-bold text-premium mb-1">
+          <Card className="p-6 border-gray-200">
+            <div className="text-2xl font-semibold text-gray-900 mb-1">
               {leagueStats?.active_picks || 0}
             </div>
-            <div className="text-xs md:text-sm text-neutral-600 font-medium">Active Picks</div>
+            <div className="text-sm text-gray-600">Active Picks</div>
           </Card>
 
-          <Card className="text-center p-4">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <Trophy size={20} className="text-purple-600 md:size-6" />
-            </div>
-            <div className="text-2xl md:text-3xl font-bold text-premium mb-1">
+          <Card className="p-6 border-gray-200">
+            <div className="text-2xl font-semibold text-gray-900 mb-1">
               {leagueStats?.completed_events || 0}
             </div>
-            <div className="text-xs md:text-sm text-neutral-600 font-medium">Completed</div>
+            <div className="text-sm text-gray-600">Completed</div>
           </Card>
         </div>
 
-        {/* League Code & Actions */}
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mr-3">
-                <Share2 size={18} className="text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-premium">Invite Friends</h3>
-                <p className="text-sm text-neutral-600">Share your league code</p>
-              </div>
-            </div>
+        {/* League Code */}
+        <Card className="p-6 border-gray-200">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Invite Code</h3>
           </div>
 
-          <div className="flex items-center space-x-2 mb-4">
-            <div className="glass px-4 py-3 rounded-xl flex-1 text-center">
-              <div className="font-mono text-xl font-bold text-blue-600 tracking-wider">
+          <div className="flex items-center space-x-3">
+            <div className="bg-gray-50 px-4 py-3 rounded-lg flex-1">
+              <div className="font-mono text-lg font-medium text-gray-900">
                 {league.invite_code}
               </div>
             </div>
             <Button
               onClick={handleCopyInviteCode}
               variant="outline"
-              size="sm"
-              className="px-4 py-3"
+              className="px-4 py-3 border-gray-300 hover:border-gray-400"
             >
-              {copied ? (
-                <>
-                  <div className="w-4 h-4 bg-green-500 rounded-full mr-2"></div>
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy size={16} className="mr-2" />
-                  Copy
-                </>
-              )}
+              {copied ? 'Copied!' : 'Copy'}
             </Button>
           </div>
-          
-          <p className="text-sm text-neutral-600 text-center">
-            Friends can join using this code in the "Join League" section
-          </p>
         </Card>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
           <Button
             onClick={() => navigate(`/leagues/${leagueId}/picks`)}
-            className="flex flex-col items-center p-4 h-auto"
+            className="p-4 h-auto border-gray-300 hover:border-gray-400 hover:bg-gray-50"
             variant="outline"
           >
-            <Target size={24} className="mb-2" />
-            <span className="text-sm font-semibold">Make Picks</span>
+            <span className="font-medium">My Picks</span>
           </Button>
 
           <Button
-            onClick={() => navigate(`/leagues/${leagueId}/events`)}
-            className="flex flex-col items-center p-4 h-auto"
+            onClick={() => navigate(`/leagues/${leagueId}/upload`)}
+            className="p-4 h-auto border-gray-300 hover:border-gray-400 hover:bg-gray-50"
             variant="outline"
           >
-            <Calendar size={24} className="mb-2" />
-            <span className="text-sm font-semibold">View Events</span>
+            <span className="font-medium">Upload Slips</span>
           </Button>
 
           <Button
             onClick={() => navigate(`/leagues/${leagueId}/leaderboard`)}
-            className="flex flex-col items-center p-4 h-auto"
+            className="p-4 h-auto border-gray-300 hover:border-gray-400 hover:bg-gray-50"
             variant="outline"
           >
-            <Trophy size={24} className="mb-2" />
-            <span className="text-sm font-semibold">Leaderboard</span>
+            <span className="font-medium">Leaderboard</span>
           </Button>
 
           <Button
             onClick={() => navigate(`/leagues/${leagueId}/analytics`)}
-            className="flex flex-col items-center p-4 h-auto"
+            className="p-4 h-auto border-gray-300 hover:border-gray-400 hover:bg-gray-50"
             variant="outline"
           >
-            <BarChart3 size={24} className="mb-2" />
-            <span className="text-sm font-semibold">Analytics</span>
+            <span className="font-medium">Analytics</span>
           </Button>
         </div>
 
         {/* Top Performers */}
-        <Card className="p-6">
+        <Card className="p-6 border-gray-200">
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl flex items-center justify-center mr-3">
-                <Trophy size={18} className="text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-premium">Top Performers</h3>
-                <p className="text-sm text-neutral-600">League leaders by net units</p>
-              </div>
-            </div>
+            <h3 className="text-lg font-semibold text-gray-900">Leaderboard</h3>
             <Button
               onClick={() => navigate(`/leagues/${leagueId}/leaderboard`)}
               variant="ghost"
               size="sm"
+              className="text-gray-600 hover:text-gray-900"
             >
               View All
             </Button>
@@ -355,34 +386,29 @@ export function LeagueHomePage() {
 
           {!leagueMembers || leagueMembers.length === 0 ? (
             <div className="text-center py-8">
-              <Users className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
-              <p className="text-neutral-500 font-medium">No rankings yet</p>
-              <p className="text-sm text-neutral-400 mt-1">
+              <p className="text-gray-500 mb-2">No rankings yet</p>
+              <p className="text-sm text-gray-400">
                 Rankings will appear after picks are made and events are graded
               </p>
             </div>
           ) : (
             <div className="space-y-3">
               {leagueMembers.slice(0, 3).map((member: any, index: number) => (
-                <div key={member.user_id} className="flex items-center justify-between p-3 glass rounded-xl">
+                <div key={member.user_id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
                   <div className="flex items-center">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 text-white font-bold text-sm ${
-                      index === 0 ? 'bg-gradient-to-br from-yellow-500 to-yellow-600' :
-                      index === 1 ? 'bg-gradient-to-br from-gray-400 to-gray-500' :
-                      'bg-gradient-to-br from-orange-600 to-orange-700'
-                    }`}>
+                    <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center mr-3 text-sm font-medium text-gray-600">
                       {index + 1}
                     </div>
                     <div>
-                      <div className="font-semibold text-premium">
+                      <div className="font-medium text-gray-900">
                         {member.profiles?.username || 'Anonymous'}
                       </div>
-                      <div className="text-sm text-neutral-600">
+                      <div className="text-sm text-gray-600">
                         {member.wins}W - {member.losses}L
                       </div>
                     </div>
                   </div>
-                  <div className={`font-bold ${
+                  <div className={`font-medium ${
                     (member.net_units || 0) >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}>
                     {(member.net_units || 0) >= 0 ? '+' : ''}{(member.net_units || 0).toFixed(1)}u
@@ -394,63 +420,108 @@ export function LeagueHomePage() {
         </Card>
 
         {/* Recent Activity */}
-        <Card className="p-6">
+        <Card className="p-6 border-gray-200">
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mr-3">
-                <Activity size={18} className="text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-premium">Recent Events</h3>
-                <p className="text-sm text-neutral-600">Latest betting opportunities</p>
-              </div>
-            </div>
-            <Button
-              onClick={() => navigate(`/leagues/${leagueId}/events`)}
-              variant="ghost"
-              size="sm"
-            >
-              View All
-            </Button>
+            <h3 className="text-lg font-semibold text-gray-900">Recent Events</h3>
           </div>
 
           {!recentEvents || recentEvents.length === 0 ? (
             <div className="text-center py-8">
-              <Calendar className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
-              <p className="text-neutral-500 font-medium">No events yet</p>
-              <p className="text-sm text-neutral-400 mt-1">
+              <p className="text-gray-500 mb-2">No events yet</p>
+              <p className="text-sm text-gray-400">
                 Ask your league admin to add some events to get started
               </p>
             </div>
           ) : (
             <div className="space-y-3">
               {recentEvents.map((event: any) => (
-                <div key={event.id} className="flex items-center justify-between p-3 glass rounded-xl">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                      <Zap size={14} className="text-blue-600" />
+                <div key={event.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+                  <div>
+                    <div className="font-medium text-gray-900">
+                      {event.away_team} @ {event.home_team}
                     </div>
-                    <div>
-                      <div className="font-semibold text-premium">
-                        {event.away_team} @ {event.home_team}
-                      </div>
-                      <div className="text-sm text-neutral-600 flex items-center">
-                        <Clock size={12} className="mr-1" />
-                        {new Date(event.start_time).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: 'numeric',
-                          minute: '2-digit'
-                        })}
-                      </div>
+                    <div className="text-sm text-gray-600">
+                      {new Date(event.start_time).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit'
+                      })}
                     </div>
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  <div className={`px-2 py-1 text-xs font-medium rounded ${
                     event.status === 'final' 
                       ? 'bg-green-100 text-green-800' 
-                      : 'bg-blue-100 text-blue-800'
+                      : 'bg-gray-100 text-gray-800'
                   }`}>
                     {event.status === 'final' ? 'Final' : 'Scheduled'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        {/* League Activity Feed */}
+        <Card className="p-6 border-gray-200">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">League Activity</h3>
+            <Button
+              onClick={() => navigate(`/leagues/${leagueId}/picks`)}
+              variant="ghost"
+              size="sm"
+              className="text-gray-600 hover:text-gray-900"
+            >
+              View All
+            </Button>
+          </div>
+
+          {!recentPicks || recentPicks.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500 mb-2">No picks yet</p>
+              <p className="text-sm text-gray-400">
+                Activity will appear when league members start making picks
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentPicks.slice(0, 5).map((pick: any) => (
+                <div key={pick.id} className="py-3 border-b border-gray-100 last:border-0">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center mb-2">
+                        <span className="font-medium text-gray-900 mr-2">
+                          {pick.profiles?.username || 'Anonymous'}
+                        </span>
+                        <span className="text-sm text-gray-600">made a pick</span>
+                        <div className={`ml-2 px-2 py-1 rounded text-xs font-medium ${getResultColor(pick.result)}`}>
+                          {pick.result === 'pending' ? 'Pending' : pick.result.toUpperCase()}
+                        </div>
+                      </div>
+                      
+                      <div className="text-sm text-gray-900 mb-1">
+                        {pick.events ? 
+                          `${pick.events.away_team} @ ${pick.events.home_team}` : 
+                          `${pick.market.toUpperCase()}: ${pick.side}${pick.line ? ` ${pick.line}` : ''}`
+                        }
+                      </div>
+                      
+                      {/* Show all pick details immediately */}
+                      <div className="flex items-center space-x-4 text-xs text-gray-600">
+                        <span>{formatMarket(pick.market, pick.side, pick.line)}</span>
+                        <span>{formatOdds(pick.odds_american)}</span>
+                        {pick.units_staked && <span>{pick.units_staked}u</span>}
+                      </div>
+                    </div>
+                    
+                    <div className="text-xs text-gray-500 ml-4 text-right">
+                      {new Date(pick.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit'
+                      })}
+                    </div>
                   </div>
                 </div>
               ))}

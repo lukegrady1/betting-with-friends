@@ -67,8 +67,10 @@ export function MobileShell({
             </div>
           )}
           
-          <main className="desktop-main">
-            {children}
+          <main className="desktop-main w-full">
+            <div className="w-full h-full">
+              {children}
+            </div>
           </main>
         </div>
       </div>
