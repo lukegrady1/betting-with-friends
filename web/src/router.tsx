@@ -13,7 +13,6 @@ import { SlipUploadPage } from "./routes/leagues/SlipUploadPage";
 import { LeaderboardPage } from "./routes/leagues/LeaderboardPage";
 import { AnalyticsPage } from "./routes/leagues/AnalyticsPage";
 import { SettingsPage } from "./routes/leagues/SettingsPage";
-import { NewPickPage } from "./routes/leagues/NewPickPage";
 
 const basename = import.meta.env.PROD ? '/betting-with-friends' : '';
 

@@ -4,13 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import { 
   Target, 
   Clock, 
-  Plus, 
   TrendingUp,
   TrendingDown,
   Minus,
   Eye,
   EyeOff,
-  Camera,
   Upload as UploadIcon
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -42,15 +40,6 @@ interface Pick {
   } | null;
 }
 
-interface Event {
-  id: string;
-  home_team: string;
-  away_team: string;
-  start_time: string;
-  status: string;
-  sport: string;
-  league_name?: string;
-}
 
 export function PicksPage() {
   const { leagueId } = useParams<{ leagueId: string }>();

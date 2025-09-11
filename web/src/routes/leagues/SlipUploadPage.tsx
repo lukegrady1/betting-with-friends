@@ -1,6 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Camera, FileImage, History } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { getSlipWithLegs, type Slip } from '../../lib/slips';
 import { MobileShell } from '../../components/Layout/MobileShell';
@@ -23,7 +22,7 @@ export function SlipUploadPage() {
   });
 
   // Get recent slips for this user and league
-  const { data: recentSlips = [], isLoading } = useQuery({
+  const { data: recentSlips = [] } = useQuery({
     queryKey: ['recent-slips', leagueId],
     queryFn: async () => {
       if (!leagueId || !session?.user) return [];

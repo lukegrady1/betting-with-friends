@@ -4,7 +4,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   Settings, 
   Users, 
-  Shield, 
   AlertTriangle,
   Copy,
   UserMinus,
@@ -70,7 +69,7 @@ export function SettingsPage() {
   });
 
   // Get current user profile
-  const { data: profile } = useQuery({
+  useQuery({
     queryKey: ['profile'],
     queryFn: async () => {
       if (!session?.user.id) return null;
@@ -106,7 +105,10 @@ export function SettingsPage() {
         .order('joined_at', { ascending: true });
 
       if (error) throw error;
-      return data as LeagueMember[];
+      return data.map(member => ({
+        ...member,
+        profiles: Array.isArray(member.profiles) ? member.profiles[0] : member.profiles
+      })) as LeagueMember[];
     },
     enabled: !!leagueId,
   });

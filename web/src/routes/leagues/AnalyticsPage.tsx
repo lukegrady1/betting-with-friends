@@ -3,13 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { 
   BarChart3, 
-  PieChart, 
   Target,
-  DollarSign,
   Users,
   Activity,
-  Award,
-  Percent
+  Award
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { MobileShell } from '../../components/Layout/MobileShell';

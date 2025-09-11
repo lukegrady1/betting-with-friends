@@ -3,15 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { 
   Trophy, 
-  Medal,
   DollarSign,
   Percent,
-  BarChart3,
-  Crown,
-  Star,
-  Award,
-  TrendingUp,
-  TrendingDown
+  BarChart3
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { MobileShell } from '../../components/Layout/MobileShell';
@@ -77,18 +71,6 @@ export function LeaderboardPage() {
     },
   });
 
-  const getRankIcon = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return <Crown className="w-6 h-6 text-yellow-500" />;
-      case 2:
-        return <Medal className="w-6 h-6 text-gray-400" />;
-      case 3:
-        return <Award className="w-6 h-6 text-orange-600" />;
-      default:
-        return <Star className="w-6 h-6 text-neutral-400" />;
-    }
-  };
 
   const getRankBadgeColor = (rank: number) => {
     switch (rank) {
@@ -191,7 +173,7 @@ export function LeaderboardPage() {
         ) : (
           <Card className="border-gray-200">
             <div className="space-y-0">
-              {leaderboard.map((entry, index) => (
+              {leaderboard.map((entry) => (
                 <div 
                   key={entry.user_id} 
                   className={`p-4 border-b border-gray-100 last:border-0 ${

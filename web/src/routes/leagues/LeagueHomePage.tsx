@@ -2,16 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { 
-  Users, 
-  Trophy, 
-  Calendar, 
-  Target, 
-  Share2, 
-  Copy, 
-  Activity,
-  BarChart3,
-  Clock,
-  Zap
+  Users
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { League } from '../../lib/types';
@@ -187,9 +178,6 @@ export function LeagueHomePage() {
     }
   };
 
-  const isStarted = (startTime: string) => {
-    return new Date(startTime) <= new Date();
-  };
 
   const handleTabChange = (tab: string) => {
     if (!leagueId) return;

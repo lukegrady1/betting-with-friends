@@ -56,7 +56,7 @@ export async function uploadSlip({ file, leagueId, userId }: SlipUpload): Promis
   const path = `slips/${userId}/${fileName}`;
   
   // Upload file to storage
-  const { data: uploadData, error: uploadError } = await supabase.storage
+  const { error: uploadError } = await supabase.storage
     .from('slips')
     .upload(path, file, { 
       cacheControl: '3600',

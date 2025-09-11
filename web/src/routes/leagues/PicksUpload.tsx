@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Camera, Upload, FileImage, AlertCircle, CheckCircle, Clock, RefreshCw } from 'lucide-react';
-import { uploadSlip, getSlipWithLegs, retrySlipParsing, getSlipImageUrl, type Slip } from '../../lib/slips';
+import { uploadSlip, getSlipWithLegs, retrySlipParsing, type Slip } from '../../lib/slips';
 import { supabase } from '../../lib/supabase';
 import { Card } from '../../components/UI/Card';
 import { Button } from '../../components/UI/Button';
@@ -34,13 +33,7 @@ export function PicksUpload({ leagueId, onSuccess }: PicksUploadProps) {
     queryKey: ['slip-status', uploadedSlip?.id],
     queryFn: () => uploadedSlip ? getSlipWithLegs(uploadedSlip.id) : null,
     enabled: !!uploadedSlip,
-    refetchInterval: (data) => {
-      // Stop polling once parsing is complete
-      if (!data?.slip || ['parsed', 'failed', 'confirmed'].includes(data.slip.status)) {
-        return false;
-      }
-      return 2000; // Poll every 2 seconds while processing
-    },
+    refetchInterval: 2000,
   });
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
